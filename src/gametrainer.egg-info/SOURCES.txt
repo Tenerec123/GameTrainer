@@ -1,0 +1,9 @@
+LICENSE
+README.md
+pyproject.toml
+src/gametrainer/__init__.py
+src/gametrainer/core.py
+src/gametrainer.egg-info/PKG-INFO
+src/gametrainer.egg-info/SOURCES.txt
+src/gametrainer.egg-info/dependency_links.txt
+src/gametrainer.egg-info/top_level.txt
