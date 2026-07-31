@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gametrainer"
+version = "0.1.0"
+description = "A library to create and train an AI to play games (MCTS, Model Creation, Train Loop)"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    # Aquí añadirás las dependencias que necesite tu librería al instalarse, por ejemplo:
+    # "torch>=2.0.0",
+    # "numpy>=1.20.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
