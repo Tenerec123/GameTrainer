@@ -1,3 +1,5 @@
-from .core import hello_trainer
+from .game import Game
+from .mcts import MCTS
+from .selfplay import MatchMaker 
 
-__all__ = ["hello_trainer"]
+__all__ = ["Game", "MCTS", "MatchMaker"]
