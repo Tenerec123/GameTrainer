@@ -111,12 +111,3 @@ class EncodableGame(Game[Position]):
         target, in the SAME canonical space the network outputs (matching
         get_board_input/get_move_mask orientation for the player to move)."""
         ...
-
-    @staticmethod
-    def encode_move(o_x, o_y, n_x, n_y):
-        """Encode a move (o_x, o_y, n_x, n_y) to (o_x, o_y, channel).
-
-        Returns a tuple matching _decode_move's output shape: (o_x, o_y, channel).
-        Each game implementation defines its own channel mapping.
-        """
-        raise NotImplementedError("Subclass must implement encode_move")
