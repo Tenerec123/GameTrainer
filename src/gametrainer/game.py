@@ -13,6 +13,9 @@ class Game(ABC, Generic[Position]):
     Position is the data structure that defines the game state.
     It should expose the player to move (attribute `turn`: +1/-1) and
     a __str__ for logs.
+
+    This contract is rules-only: no neural-network knowledge lives here.
+    The canonical-space (NN) face is the EncodableGame contract.
     """
 
     @abstractmethod
@@ -50,25 +53,56 @@ class Game(ABC, Generic[Position]):
         ...
 
     @abstractmethod
-    def get_board_input(self, position: Position):
-        """Encode the position as a tensor for the neural network."""
+    def clone(self, position: Position) -> Position:
+        """Return a deep copy of the position."""
+        ...
+
+    def __str__(self):
+        return super().__str__()
+
+
+class EncodableGame(Game[Position]):
+    """Neural-network face of a game
+
+    Only required on the NN path.
+    The network always sees the board from the perspective of the player to move (canonical space).
+    This contract encodes positions into that space and decodes policies back into real moves.
+    All shapes are channels-first (C, H, W) with no batch dimension.
+    """
+
+    @property
+    @abstractmethod
+    def input_shape(self) -> tuple[int, int, int]:
+        """(C, H, W) returned by get_board_input."""
+        ...
+
+    @property
+    @abstractmethod
+    def policy_shape(self) -> tuple[int, int, int]:
+        """(C_pol, H, W) of get_move_mask, encode_policy_target and the
+        policy the evaluator hands to get_move_probs."""
         ...
 
     @abstractmethod
-    def get_move_mask(self, position: Position):
-        """Return a mask of legal moves for the neural network."""
+    def get_board_input(self, position: Position) -> np.ndarray:
+        """Encode the position as a float32 array with shape input_shape,
+        in canonical space (player-to-move perspective)."""
+        ...
+
+    @abstractmethod
+    def get_move_mask(self, position: Position) -> np.ndarray:
+        """Return a float32 mask of legal moves with shape policy_shape
+        (1.0 legal, 0.0 illegal)."""
         ...
 
     @abstractmethod
     def get_move_probs(self, nn_output, to_play=1) -> dict:
-        """Receives the nn output and outputs a dict with key-> move and value -> policy percentage (0-1)
+        """Receives the canonical policy (numpy, policy_shape, already
+        masked and normalized) and outputs a dict with key -> move and
+        value -> policy percentage (0-1).
 
         to_play: 1 for white, -1 for black. Used to un-flip canonical coordinates.
         """
-        ...
-    @abstractmethod
-    def clone(self, position: Position) -> Position:
-        """Return a deep copy of the position."""
         ...
 
     @abstractmethod
@@ -76,6 +110,7 @@ class Game(ABC, Generic[Position]):
         """Encode a visit-count distribution over real moves as a policy
         target, in the SAME canonical space the network outputs (matching
         get_board_input/get_move_mask orientation for the player to move)."""
+        ...
 
     @staticmethod
     def encode_move(o_x, o_y, n_x, n_y):
@@ -85,6 +120,3 @@ class Game(ABC, Generic[Position]):
         Each game implementation defines its own channel mapping.
         """
         raise NotImplementedError("Subclass must implement encode_move")
-
-    def __str__(self):
-        return super().__str__()

@@ -1,9 +1,9 @@
-from .game import Game
+from .game import EncodableGame
 import numpy as np
 from .mcts import MCTS, Node
 
 class MatchMaker:
-    def __init__(self, game:Game, evaluator, max_moves, mcts_simulations):
+    def __init__(self, game: EncodableGame, evaluator, max_moves, mcts_simulations):
         self.game = game
         self.evaluator = evaluator
         self.max_moves = max_moves
