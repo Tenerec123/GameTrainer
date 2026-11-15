@@ -154,6 +154,29 @@ class NeuralEvaluator:
         self.net.to(self.device)
         self.net.eval()
 
+        if net is not None:
+            self._validate_net()
+
+    def _validate_net(self):
+        """Fail fast if a custom net breaks the (input, logits, value) contract."""
+        input_shape, policy_shape = _probe_shapes(self.game)
+        x = torch.zeros(1, *input_shape, device=self.device)
+        try:
+            with torch.no_grad():
+                logits, value = self.net(x)
+        except (RuntimeError, TypeError, ValueError) as e:
+            raise ValueError(
+                f"custom net failed the dummy forward with input {tuple(x.shape)}: {e}"
+            ) from e
+        if tuple(logits.shape) != (1, *policy_shape):
+            raise ValueError(
+                f"net returned logits {tuple(logits.shape)}, expected {(1, *policy_shape)}"
+            )
+        if tuple(value.shape) not in ((1,), (1, 1)):
+            raise ValueError(
+                f"net returned value {tuple(value.shape)}, expected (1,) or (1, 1)"
+            )
+
     def evaluate(self, position):
         _require_torch()
         board = np.asarray(self.game.get_board_input(position), dtype=np.float32)

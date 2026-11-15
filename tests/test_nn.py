@@ -118,6 +118,48 @@ def test_custom_net_without_arch_does_not_warn():
     assert len(priors) == 9
 
 
+def test_custom_net_with_wrong_logits_shape_fails_fast():
+    class FlatNet(torch.nn.Module):
+        def forward(self, x):
+            n = x.shape[0]
+            return torch.zeros(n, 9), torch.zeros(n)
+
+    with pytest.raises(ValueError, match="logits"):
+        NeuralEvaluator(TicTacToe(), net=FlatNet())
+
+
+def test_custom_net_with_wrong_value_shape_fails_fast():
+    class BadValueNet(torch.nn.Module):
+        def forward(self, x):
+            n = x.shape[0]
+            return torch.zeros(n, 1, 3, 3), torch.zeros(n, 2)
+
+    with pytest.raises(ValueError, match="value"):
+        NeuralEvaluator(TicTacToe(), net=BadValueNet())
+
+
+def test_custom_net_with_wrong_input_channels_fails_fast():
+    class ChessChannelsNet(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.conv = torch.nn.Conv2d(17, 1, 3, padding=1)
+
+        def forward(self, x):
+            return self.conv(x), torch.zeros(x.shape[0])
+
+    with pytest.raises(ValueError, match="dummy forward"):
+        NeuralEvaluator(TicTacToe(), net=ChessChannelsNet())
+
+
+def test_custom_net_taking_mask_fails_fast():
+    class MaskNet(torch.nn.Module):
+        def forward(self, x, mask):
+            return torch.zeros(x.shape[0], 1, 3, 3), torch.zeros(x.shape[0])
+
+    with pytest.raises(ValueError, match="dummy forward"):
+        NeuralEvaluator(TicTacToe(), net=MaskNet())
+
+
 def test_mcts_runs_with_neural_evaluator():
     """The learned evaluator speaks the Evaluator protocol: MCTS just works."""
     game = TicTacToe()
