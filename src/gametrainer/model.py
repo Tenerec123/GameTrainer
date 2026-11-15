@@ -7,7 +7,7 @@ never requires torch. Install the optional extra with::
 """
 
 import numpy as np
-
+from .game import EncodableGame
 try:
     import torch
     import torch.nn as nn 
@@ -28,24 +28,26 @@ def _require_torch():
         )
 
 
-def _probe_shapes(game):
+def _probe_shapes(game: EncodableGame):
     pos0 = game.get_initial_position()
     board = np.asarray(game.get_board_input(pos0))
     mask = np.asarray(game.get_move_mask(pos0))
-    if game.input_shape is not None and tuple(board.shape) != tuple(game.input_shape):
-        raise ValueError(
-            f"get_board_input shape {board.shape} does not match "
-            f"declared input_shape {game.input_shape}"
-        )
-    if game.policy_shape is not None and tuple(mask.shape) != tuple(game.policy_shape):
-        raise ValueError(
-            f"get_move_mask shape {mask.shape} does not match "
-            f"declared policy_shape {game.policy_shape}"
-        )
+
     if game.input_shape is None:
         raise ValueError("game must declare input_shape")
     if game.policy_shape is None:
         raise ValueError("game must declare policy_shape")
+
+    if tuple(board.shape) != tuple(game.input_shape):
+        raise ValueError(
+            f"get_board_input shape {board.shape} does not match "
+            f"declared input_shape {game.input_shape}"
+        )
+    if tuple(mask.shape) != tuple(game.policy_shape):
+        raise ValueError(
+            f"get_move_mask shape {mask.shape} does not match "
+            f"declared policy_shape {game.policy_shape}"
+        )
     return tuple(int(x) for x in game.input_shape), tuple(int(x) for x in game.policy_shape)
 
 
@@ -103,7 +105,7 @@ class _GenericNet(nn.Module if _TORCH_AVAILABLE else object):
         return policy_logits, v.squeeze(-1)
 
 
-def build_net(game, arch="small"):
+def build_net(game: EncodableGame, arch="small"):
     """Build a generic conv net for ``game`` using a named power preset."""
     _require_torch()
     input_shape, policy_shape = _probe_shapes(game)
@@ -127,10 +129,9 @@ class NeuralEvaluator:
     The game must implement the EncodableGame contract (canonical space).
     """
 
-    def __init__(self, game, arch="small", net=None, device=None):
+    def __init__(self, game: EncodableGame, arch="small", net=None, device=None):
         _require_torch()
         self.game = game
-        self.input_shape, self.policy_shape = _probe_shapes(game)
 
         if device is None:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -146,9 +147,8 @@ class NeuralEvaluator:
 
     def evaluate(self, position):
         _require_torch()
-        game = self.game
-        board = np.asarray(game.get_board_input(position), dtype=np.float32)
-        mask = np.asarray(game.get_move_mask(position), dtype=np.float32)
+        board = np.asarray(self.game.get_board_input(position), dtype=np.float32)
+        mask = np.asarray(self.game.get_move_mask(position), dtype=np.float32)
 
         x = torch.from_numpy(board).unsqueeze(0).to(self.device)  # (1, C, H, W)
         m = torch.from_numpy(mask).unsqueeze(0).to(self.device)  # (1, C_pol, H, W)
@@ -168,6 +168,6 @@ class NeuralEvaluator:
             policy = probs_flat.reshape(logits.shape[1:]).detach().cpu().numpy().astype(np.float32)
 
         to_play = getattr(position, "turn", 1)
-        priors = game.get_move_probs(policy, to_play)
+        priors = self.game.get_move_probs(policy, to_play)
         v = float(value.item()) if hasattr(value, "item") else float(value)
         return priors, v
