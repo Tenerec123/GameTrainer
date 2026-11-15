@@ -6,6 +6,8 @@ never requires torch. Install the optional extra with::
     pip install 'gametrainer[nn]'
 """
 
+import warnings
+
 import numpy as np
 from .game import EncodableGame
 try:
@@ -129,7 +131,7 @@ class NeuralEvaluator:
     The game must implement the EncodableGame contract (canonical space).
     """
 
-    def __init__(self, game: EncodableGame, arch="small", net=None, device=None):
+    def __init__(self, game: EncodableGame, arch=None, net=None, device=None):
         _require_torch()
         self.game = game
 
@@ -139,9 +141,16 @@ class NeuralEvaluator:
             self.device = torch.device(device)
 
         if net is not None:
+            if arch is not None:
+                warnings.warn(
+                    f"arch={arch!r} is ignored because a custom net was provided",
+                    stacklevel=2,
+                )
             self.net = net
-        else:
+        elif arch is not None:
             self.net = build_net(game, arch)
+        else:
+            self.net = build_net(game)
         self.net.to(self.device)
         self.net.eval()
 

@@ -3,6 +3,8 @@
 These need torch (the [nn] extra). The module is skipped gracefully
 where torch is absent so the rest of the suite stays green anywhere.
 """
+import warnings
+
 import numpy as np
 import pytest
 
@@ -95,6 +97,25 @@ def test_evaluate_with_custom_net_is_deterministic():
     assert len(priors) == 9
     np.testing.assert_allclose(sorted(priors.values()), [1 / 9] * 9, atol=1e-6)
     assert value == 0.0
+
+
+def test_custom_net_warns_when_arch_is_also_given():
+    with pytest.warns(UserWarning, match="ignored"):
+        NeuralEvaluator(TicTacToe(), arch="tiny", net=FixedNet())
+
+
+def test_custom_net_warns_even_for_explicit_default_arch():
+    with pytest.warns(UserWarning, match="ignored"):
+        NeuralEvaluator(TicTacToe(), arch="small", net=FixedNet())
+
+
+def test_custom_net_without_arch_does_not_warn():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        ev = NeuralEvaluator(TicTacToe(), net=FixedNet())
+
+    priors, _ = ev.evaluate(TicTacToe().get_initial_position())
+    assert len(priors) == 9
 
 
 def test_mcts_runs_with_neural_evaluator():
