@@ -16,3 +16,6 @@ dependencies = [
 dev = [
     "pytest",
 ]
+nn = [
+    "torch>=2.0",
+]
