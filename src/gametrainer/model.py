@@ -61,9 +61,9 @@ class _ResidualBlock(nn.Module if _TORCH_AVAILABLE else object):
     def __init__(self, channels):
         _require_torch()
         super().__init__()
-        self.conv1 = nn.Conv2d(channels, channels, 3, padding=1)
+        self.conv1 = nn.Conv2d(channels, channels, 3, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(channels)
-        self.conv2 = nn.Conv2d(channels, channels, 3, padding=1)
+        self.conv2 = nn.Conv2d(channels, channels, 3, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(channels)
 
     def forward(self, x):
@@ -82,7 +82,7 @@ class _GenericNet(nn.Module if _TORCH_AVAILABLE else object):
     def __init__(self, c_in, c_pol, h, w, blocks, channels):
         _require_torch()
         super().__init__()
-        self.stem = nn.Conv2d(c_in, channels, 3, padding=1)
+        self.stem = nn.Conv2d(c_in, channels, 3, padding=1, bias=False)
         self.stem_bn = nn.BatchNorm2d(channels)
         self.tower = nn.ModuleList([_ResidualBlock(channels) for _ in range(blocks)])
         self.policy_head = nn.Conv2d(channels, c_pol, 1)
