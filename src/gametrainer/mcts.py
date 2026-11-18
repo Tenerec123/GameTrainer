@@ -84,27 +84,48 @@ class MCTS:
         self.num_simulations = num_simulations
 
     def run(self, root:Node, state):
+        # Terminal or no-move positions need no search.
+        if self.game.is_game_over(state):
+            value = self.game.get_result(state, getattr(root, "to_play", 1))
+            if value is None:
+                try:
+                    _, value = self.evaluator.evaluate(state)
+                except Exception:
+                    value = 0.0
+            if value is None:
+                value = 0.0
+            root.visit_count = max(root.visit_count, 1)
+            if root.visit_count == 1:
+                root.value_sum += value
+            return None
+
         if not root.is_expanded():
             move_probs, _ = self.evaluator.evaluate(state)
             root.expand(state, move_probs)
+        if not root.children:
+            return None
         root_noise(root)
         for _ in range(self.num_simulations - root.visit_count):
             node = root
             search_path = [root]
             try:
-                while node.is_expanded():
-                    move,child = node.select_child()
+                while node.is_expanded() and node.children:
+                    move, child = node.select_child()
                     search_path.append(child)
                     node = child
+                if len(search_path) < 2:
+                    break
                 node_state = self.game.make_move(search_path[-2].state, move)
                 value = self.game.get_result(node_state, node.to_play)
                 if value is None:
                     move_probs, value = self.evaluator.evaluate(node_state)
                     node.expand(node_state, move_probs)
                 self.backpropagate(search_path, value, node.to_play)
-            except ValueError as e:
+            except Exception as e:
                 print(e)
-                return [node.state for node in search_path[:-1]]
+                if len(search_path) > 1:
+                    return [n.state for n in search_path[:-1]]
+                return None
         return None
     def backpropagate(self, search_path, value, to_play):
         for node in search_path:

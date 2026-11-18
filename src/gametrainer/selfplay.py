@@ -64,6 +64,8 @@ class MatchMaker:
             policy_targets.append(self.game.encode_policy_target(current_pos, visit_counts))
 
             weights = np.array([c.visit_count ** (1 / temp) for c in current_node.children.values()])
+            if weights.sum() == 0:
+                weights = np.ones_like(weights)
             weights /= weights.sum()          # normaliza por la suma REAL: robusto siempre
             next_move_idx = np.random.choice(len(weights), p=weights)
 
@@ -83,7 +85,7 @@ class MatchMaker:
             return [], np.array([]), np.array([])
 
         last_value_white = None
-        is_fifty_move_draw = False
+        is_adjudicated_draw = False
         if self.game.is_game_over(current_pos):
             last_value_white = self.game.get_result(current_pos, 1)
             # A terminal draw that still has legal moves is an adjudicated
