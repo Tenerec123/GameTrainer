@@ -248,7 +248,9 @@ class Trainer:
         """Run self-play via ``matchmaker`` until ``n_moves`` positions gathered.
 
         Appends the collected data to the current dataset, calling ``add_data``
-        once per finished match. ``n_step`` is forwarded to ``MatchMaker.run_match``.
+        once per finished match. The whole last match is kept even if it pushes
+        the total past ``n_moves`` (no trimming of the surplus). ``n_step`` is
+        forwarded to ``MatchMaker.run_match``.
         """
         added = 0
         empty_streak = 0
@@ -267,12 +269,6 @@ class Trainer:
             pos_list = list(pos_list)
             pol = np.asarray(pol, dtype=np.float32)
             val = np.asarray(val, dtype=np.float32)
-
-            remaining = n_moves - added
-            if len(pos_list) > remaining:
-                pos_list = pos_list[:remaining]
-                pol = pol[:remaining]
-                val = val[:remaining]
 
             self.add_data(pos_list, pol, val)
             added += len(pos_list)
