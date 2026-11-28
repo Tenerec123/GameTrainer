@@ -58,7 +58,7 @@ class MatchMaker:
             result = self.mcts.run(current_node, current_pos)
             if result is not None:
                 self._print_move_traceback(pos_list+result)
-                raise RuntimeError("El rey ha desaparecido, aquí el traceback ^")
+                raise RuntimeError("There was an error during the data generation")
             
             visit_counts = {move: c.visit_count for move, c in current_node.children.items()}
             policy_targets.append(self.game.encode_policy_target(current_pos, visit_counts))
