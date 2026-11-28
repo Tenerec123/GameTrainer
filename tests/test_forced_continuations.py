@@ -40,7 +40,10 @@ class FTGame(Game[FTPos, int]):
     def get_legal_moves(self, position):
         if position.cell >= self.length - 1:
             return []
-        return [position.cell + 1]
+        moves = [position.cell + 1]
+        if position.cell + 2 < self.length:
+            moves.append(position.cell + 2)
+        return moves
 
     def make_move(self, position, move):
         new_cell = move
@@ -84,9 +87,9 @@ def test_mcts_forced_continuation_to_play():
     root.visit_count = 1
     pos = FTPos(1, -1)
     mcts.run(root, pos)
-    assert len(root.children) == 1
-    child = list(root.children.values())[0]
-    assert child.to_play == -1  # forced continuation: same turn
+    # move to 2 (even) keeps turn, move to 3 (odd) alternates
+    assert root.children[2].to_play == -1
+    assert root.children[3].to_play == 1
 
 
 def test_mcts_alternating_to_play():
