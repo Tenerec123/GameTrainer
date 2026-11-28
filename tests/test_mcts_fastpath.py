@@ -25,11 +25,8 @@ class _SpyEvaluator:
     def evaluate(self, position):
         self.calls += 1
         legal = self.game.get_legal_moves(position)
-        probs = {}
-        n = max(1, sum(len(v) for v in legal.values()))
-        for o, ds in legal.items():
-            for d in ds:
-                probs[(o, d)] = 1.0 / n
+        n = max(1, len(legal))
+        probs = {move: 1.0 / n for move in legal}
         if not probs:
             return {}, self.value
         return probs, self.value
@@ -99,7 +96,7 @@ def test_fastpath_one_hot_prior_value():
     assert len(root.children) == 1
     move, child = next(iter(root.children.items()))
     assert child.prior == pytest.approx(1.0)
-    assert move == (8, 8)
+    assert move == 8
 
 
 def test_fastpath_internal_node_mixed():

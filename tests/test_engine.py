@@ -33,6 +33,5 @@ def test_mcts_standalone_picks_a_move():
                                 key=lambda kv: kv[1].visit_count)
     assert best_child.visit_count > 0
     assert -1.0 <= root.value() <= 1.0
-    legal = [(o, d) for o, ds in game.get_legal_moves(game.get_initial_position()).items()
-             for d in ds]
+    legal = game.get_legal_moves(game.get_initial_position())
     assert best_move in legal

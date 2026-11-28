@@ -63,7 +63,7 @@ def test_policy_value_loss_all_zero_mask_row_no_nan():
 def test_game_dataset_roundtrip():
     game = TicTacToe()
     pos = game.get_initial_position()
-    positions = [pos, game.make_move(pos, (0, 0))]
+    positions = [pos, game.make_move(pos, 0)]
     policies = np.zeros((2, 1, 3, 3), dtype=np.float32)
     policies[0, 0, 0, 0] = 1.0
     values = np.array([1.0, -1.0], dtype=np.float32)
@@ -222,9 +222,9 @@ def test_evaluator_terminal_position_empty_priors():
     ev = NeuralEvaluator(game, arch="tiny")
     # play to a terminal win
     pos = game.get_initial_position()
-    pos = game.make_move(pos, (0, 0))
-    pos = game.make_move(pos, (1, 1))
-    pos = game.make_move(pos, (4, 4))  # may or may not be terminal; force board full not needed
+    pos = game.make_move(pos, 0)
+    pos = game.make_move(pos, 4)
+    pos = game.make_move(pos, 8)  # may or may not be terminal; force board full not needed
     priors, value = ev.evaluate(game.get_initial_position())
     assert isinstance(priors, dict)
     assert -1.0 <= value <= 1.0

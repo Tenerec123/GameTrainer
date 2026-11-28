@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import TypeVar, Generic
 import numpy as np
+
 Position = TypeVar("Position")
+Move = TypeVar("Move")
 
 
-class Game(ABC, Generic[Position]):
+class Game(ABC, Generic[Position, Move]):
     """Base game interface for MCTS + AlphaZero architecture.
 
     The Game is a pure engine: it receives positions and returns results.
@@ -13,6 +15,10 @@ class Game(ABC, Generic[Position]):
     Position is the data structure that defines the game state.
     It should expose the player to move (attribute `turn`: +1/-1) and
     a __str__ for logs.
+
+    Move is the type of a legal move (int, str, tuple, frozen dataclass, ...).
+    It must be hashable because moves are used as keys in move_probs and
+    Node.children.
 
     This contract is rules-only: no neural-network knowledge lives here.
     The canonical-space (NN) face is the EncodableGame contract.
@@ -24,15 +30,12 @@ class Game(ABC, Generic[Position]):
         ...
 
     @abstractmethod
-    def get_legal_moves(self, position: Position) -> dict:
-        """Return all legal moves from the given position.
-
-        Returns a dict: {origin: [destiny, ...]}
-        """
+    def get_legal_moves(self, position: Position) -> list[Move]:
+        """Return all legal moves from the given position."""
         ...
 
     @abstractmethod
-    def make_move(self, position: Position, move) -> Position:
+    def make_move(self, position: Position, move: Move) -> Position:
         """Apply a move and return a NEW position (no mutation)."""
         ...
 
@@ -42,7 +45,7 @@ class Game(ABC, Generic[Position]):
         ...
 
     @abstractmethod
-    def get_result(self, position: Position, player) -> float:
+    def get_result(self, position: Position, player: int) -> float|None:
         """Return the result for `player` from the given position.
 
         Returns:
@@ -61,7 +64,8 @@ class Game(ABC, Generic[Position]):
         return super().__str__()
 
 
-class EncodableGame(Game[Position]):
+
+class EncodableGame(Game[Position, Move], Generic[Position, Move]):
     """Neural-network face of a game
 
     Only required on the NN path.
@@ -96,7 +100,7 @@ class EncodableGame(Game[Position]):
         ...
 
     @abstractmethod
-    def get_move_probs(self, nn_output, to_play=1) -> dict:
+    def get_move_probs(self, nn_output: np.ndarray, to_play: int = 1) -> dict[Move, float]:
         """Receives the canonical policy (numpy, policy_shape, already
         masked and normalized) and outputs a dict with key -> move and
         value -> policy percentage (0-1).
@@ -106,7 +110,7 @@ class EncodableGame(Game[Position]):
         ...
 
     @abstractmethod
-    def encode_policy_target(self, position: Position, move_visits: dict) -> np.ndarray:
+    def encode_policy_target(self, position: Position, move_visits: dict[Move, int]) -> np.ndarray:
         """Encode a visit-count distribution over real moves as a policy
         target, in the SAME canonical space the network outputs (matching
         get_board_input/get_move_mask orientation for the player to move)."""

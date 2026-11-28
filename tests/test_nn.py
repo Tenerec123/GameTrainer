@@ -66,7 +66,7 @@ def test_evaluate_returns_normalized_priors():
 
     priors, value = ev.evaluate(game.get_initial_position())
 
-    legal = {(i, i) for i, cell in enumerate(game.get_initial_position().board) if cell == 0}
+    legal = {i for i, cell in enumerate(game.get_initial_position().board) if cell == 0}
     assert set(priors) == legal
     assert abs(sum(priors.values()) - 1.0) < 1e-5
     assert all(0.0 < p <= 1.0 for p in priors.values())
@@ -79,11 +79,11 @@ def test_evaluate_respects_legality_after_moves():
     torch.manual_seed(0)
     ev = NeuralEvaluator(game, arch="tiny")
 
-    pos = game.make_move(game.get_initial_position(), (0, 0))
-    pos = game.make_move(pos, (4, 4))
+    pos = game.make_move(game.get_initial_position(), 0)
+    pos = game.make_move(pos, 4)
     priors, _ = ev.evaluate(pos)
 
-    legal = {(i, i) for i, cell in enumerate(pos.board) if cell == 0}
+    legal = {i for i, cell in enumerate(pos.board) if cell == 0}
     assert set(priors) == legal
     assert abs(sum(priors.values()) - 1.0) < 1e-5
 
@@ -174,6 +174,5 @@ def test_mcts_runs_with_neural_evaluator():
     best_move, best_child = max(root.children.items(), key=lambda kv: kv[1].visit_count)
     assert best_child.visit_count > 0
     assert -1.0 <= root.value() <= 1.0
-    legal = {(o, d) for o, ds in game.get_legal_moves(game.get_initial_position()).items()
-             for d in ds}
+    legal = set(game.get_legal_moves(game.get_initial_position()))
     assert best_move in legal

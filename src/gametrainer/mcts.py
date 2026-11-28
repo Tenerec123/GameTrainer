@@ -96,12 +96,12 @@ class MCTS:
 
         if not root.is_expanded():
             legal = self.game.get_legal_moves(state)
-            n_legal = sum(len(v) for v in legal.values())
-            if n_legal == 0: raise ValueError("game is malformed: no legal moves from a non-terminal position")
+            n_legal = len(legal)
+            if n_legal == 0:
+                raise ValueError("game is malformed: no legal moves from a non-terminal position")
             if n_legal == 1:
-                origin = next(iter(legal))
-                dest = legal[origin][0]
-                move_probs = {(origin, dest): 1.0}
+                move = legal[0]
+                move_probs = {move: 1.0}
                 root.expand(state, move_probs)
             else:
                 move_probs, value = self.evaluator.evaluate(state)
@@ -123,6 +123,8 @@ class MCTS:
                 node.state = self.game.make_move(search_path[-2].state, move)
                 value = self.game.get_result(node.state, node.to_play)
                 if value is None:
+                    if len(self.game.get_legal_moves(node.state)) == 0:
+                        raise ValueError("game is malformed: no legal moves from a non-terminal position")
                     move_probs, value = self.evaluator.evaluate(node.state)
                     node.expand(node.state, move_probs)
 

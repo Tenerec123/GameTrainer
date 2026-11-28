@@ -11,7 +11,7 @@ import numpy as np
 
 from gametrainer import EncodableGame, Game
 
-class PathGame(Game[int]):
+class PathGame(Game[int, int]):
     """Minimal Game with a single forced path: 0 -> 1 -> ... -> N."""
 
     def __init__(self, length=6):
@@ -66,20 +66,20 @@ class TicTacToePos:
         return "\n".join(" ".join(symbols[c] for c in row) for row in rows)
 
 
-class TicTacToeCore(Game[TicTacToePos]):
+class TicTacToeCore(Game[TicTacToePos, int]):
     """Rules-only face: zero neural-network members."""
 
     def get_initial_position(self) -> TicTacToePos:
         return TicTacToePos((0,) * 9, 1)
 
-    def get_legal_moves(self, position) -> dict:
-        return {i: [i] for i, cell in enumerate(position.board) if cell == 0}
+    def get_legal_moves(self, position) -> list:
+        return [i for i, cell in enumerate(position.board) if cell == 0]
 
     def make_move(self, position, move) -> TicTacToePos:
-        origin, destiny = move
-        if position.board[origin] != 0 or origin != destiny:
+        cell = move
+        if position.board[cell] != 0:
             raise ValueError(f"illegal move {move}")
-        board = position.board[:origin] + (position.turn,) + position.board[origin + 1:]
+        board = position.board[:cell] + (position.turn,) + position.board[cell + 1:]
         return TicTacToePos(board, -position.turn)
 
     def is_game_over(self, position) -> bool:
@@ -97,7 +97,7 @@ class TicTacToeCore(Game[TicTacToePos]):
         return TicTacToePos(position.board, position.turn)
 
 
-class TicTacToe(TicTacToeCore, EncodableGame[TicTacToePos]):
+class TicTacToe(TicTacToeCore, EncodableGame[TicTacToePos, int]):
     """Full contract: rules + canonical-space (NN) face."""
 
     # Canonical space (channels-first, no batch dim)
@@ -119,13 +119,13 @@ class TicTacToe(TicTacToeCore, EncodableGame[TicTacToePos]):
         # The evaluator delivers the policy already masked and normalized:
         # illegal cells carry exactly 0.0, so p > 0 identifies legal moves.
         probs = np.asarray(nn_output, dtype=np.float32).reshape(-1)
-        return {(i, i): float(p) for i, p in enumerate(probs) if p > 0.0}
+        return {i: float(p) for i, p in enumerate(probs) if p > 0.0}
 
     def encode_policy_target(self, position, move_visits) -> np.ndarray:
         target = np.zeros((1, 3, 3), dtype=np.float32)
         total = sum(move_visits.values()) or 1
-        for (origin, destiny), visits in move_visits.items():
-            target[0, origin // 3, origin % 3] = visits / total
+        for cell, visits in move_visits.items():
+            target[0, cell // 3, cell % 3] = visits / total
         return target
 
 
@@ -136,7 +136,7 @@ class RolloutEvaluator:
         self.game = game
 
     def _legal(self, position):
-        return [(o, d) for o, ds in self.game.get_legal_moves(position).items() for d in ds]
+        return list(self.game.get_legal_moves(position))
 
     def evaluate(self, position):
         legal = self._legal(position)
