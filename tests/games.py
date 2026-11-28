@@ -11,6 +11,38 @@ import numpy as np
 
 from gametrainer import EncodableGame, Game
 
+class PathGame(Game[int]):
+    """Minimal Game with a single forced path: 0 -> 1 -> ... -> N."""
+
+    def __init__(self, length=6):
+        self.length = length
+
+    def get_initial_position(self):
+        return 0
+
+    def get_legal_moves(self, position):
+        if position >= self.length:
+            return {}
+        return {position: [position + 1]}
+
+    def make_move(self, position, move):
+        origin, destiny = move
+        assert origin == position and destiny == position + 1
+        return destiny
+
+    def is_game_over(self, position):
+        return position >= self.length
+
+    def get_result(self, position, player):
+        if not self.is_game_over(position):
+            return None
+        # last mover wins
+        return 1.0 if (position % 2 == 0) else -1.0
+
+    def clone(self, position):
+        return position
+
+
 LINES = [(0, 1, 2), (3, 4, 5), (6, 7, 8),
          (0, 3, 6), (1, 4, 7), (2, 5, 8),
          (0, 4, 8), (2, 4, 6)]
