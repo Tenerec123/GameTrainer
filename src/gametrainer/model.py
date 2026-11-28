@@ -10,24 +10,7 @@ import warnings
 
 import numpy as np
 from .game import EncodableGame
-try:
-    import torch
-    import torch.nn as nn 
-    import torch.nn.functional as F
-
-    _TORCH_AVAILABLE = True
-except ImportError:  # pragma: no cover - depends on environment
-    torch = None
-    nn = None
-    F = None
-    _TORCH_AVAILABLE = False
-
-
-def _require_torch():
-    if not _TORCH_AVAILABLE:
-        raise ImportError(
-            "NeuralEvaluator requires torch. Install with: pip install 'gametrainer[nn]'"
-        )
+from ._torch import torch, nn, F, _TORCH_AVAILABLE, _require_torch
 
 
 def _probe_shapes(game: EncodableGame):
