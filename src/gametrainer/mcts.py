@@ -45,6 +45,34 @@ def root_noise(root_node, alpha=0.3, epsilon=0.25):
     for i, child in enumerate(children):
         child.prior = (1 - epsilon) * child.prior + epsilon * noise[i]
 
+class RolloutEvaluator:
+    """Uniform priors + value from a random rollout to the end.
+
+    No torch dependency: usable as a zero-training baseline evaluator and
+    as the engine behind ``Player(rollout_eval=True)``.
+    """
+
+    def __init__(self, game):
+        self.game = game
+
+    def _legal(self, position):
+        return list(self.game.get_legal_moves(position))
+
+    def evaluate(self, position):
+        legal = self._legal(position)
+        if not legal:
+            return {}, 0.0
+        priors = {move: 1.0 / len(legal) for move in legal}
+        pos = position
+        while not self.game.is_game_over(pos):
+            moves = self._legal(pos)
+            if not moves:
+                break
+            pos = self.game.make_move(pos, random.choice(moves))
+        value = self.game.get_result(pos, getattr(position, "turn", 1))
+        return priors, float(value if value is not None else 0.0)
+
+
 class Node:
     def __init__(self, prior, to_play):
         self.to_play = to_play
