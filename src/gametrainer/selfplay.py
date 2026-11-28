@@ -112,7 +112,8 @@ class MatchMaker:
             value_targets = np.zeros(moves_played)
             for k in range(moves_played):
                 target_idx = min(k + n_step, moves_played - 1)
-                value_targets[k] = mcts_values[target_idx] * (1 if (target_idx - k) % 2 == 0 else -1)
+                # turn_k / turn_j are +/-1; product is +1 if same player to move.
+                value_targets[k] = mcts_values[target_idx] * (pos_list[k].turn * pos_list[target_idx].turn)
             if is_adjudicated_draw:
                 result = f"Adjudicated draw (n-step={n_step}) in {moves_played} moves"
             else:

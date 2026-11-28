@@ -97,10 +97,23 @@ class Node:
                 best_move = move
                 best_child = child
         return best_move, best_child
-    def expand(self, state, move_probs:dict):
+    def expand(self, state, move_probs:dict, child_turns=None):
+        """Expand the node with the given move priors.
+
+        child_turns: optional list aligned with move_probs (same order) giving
+        the player to move in each child (forced continuations). When None,
+        the turn always alternates. A dict move->turn is also accepted.
+        """
         self.state = state
+        moves = list(move_probs.keys())
+        if child_turns is None:
+            turns = [-self.to_play] * len(moves)
+        elif isinstance(child_turns, dict):
+            turns = [child_turns[m] for m in moves]
+        else:
+            turns = list(child_turns)
         for i, (move, prior) in enumerate(move_probs.items()):
-            self.children[move] = Node(prior, -self.to_play)
+            self.children[move] = Node(prior, turns[i])
 
     def is_expanded(self) -> bool:
         return len(self.children) > 0
@@ -130,10 +143,13 @@ class MCTS:
             if n_legal == 1:
                 move = legal[0]
                 move_probs = {move: 1.0}
-                root.expand(state, move_probs)
+                turns = self.game.next_turns(state, [move])
+                root.expand(state, move_probs, turns)
             else:
                 move_probs, value = self.evaluator.evaluate(state)
-                root.expand(state, move_probs)
+                moves = list(move_probs.keys())
+                turns = self.game.next_turns(state, moves)
+                root.expand(state, move_probs, turns)
             root.state = state
         if not root.children:
             raise ValueError("game is malformed: no legal moves from a non-terminal position")
@@ -154,7 +170,9 @@ class MCTS:
                     if len(self.game.get_legal_moves(node.state)) == 0:
                         raise ValueError("game is malformed: no legal moves from a non-terminal position")
                     move_probs, value = self.evaluator.evaluate(node.state)
-                    node.expand(node.state, move_probs)
+                    moves = list(move_probs.keys())
+                    turns = self.game.next_turns(node.state, moves)
+                    node.expand(node.state, move_probs, turns)
 
                 self.backpropagate(search_path, value, node.to_play)
             except Exception as e:

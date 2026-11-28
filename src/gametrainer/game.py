@@ -61,6 +61,27 @@ class Game(ABC, Generic[Position, Move]):
         """Return a deep copy of the position."""
         ...
 
+    def next_turn(self, position: Position, move: Move) -> int:
+        """Player to move AFTER applying a single `move`.
+
+        Default alternates the turn (-position.turn). Override to support
+        forced continuations where a move does NOT change the turn (return
+        position.turn). The returned value must match the turn stored in the
+        position returned by make_move (source of truth for MCTS/self-play).
+        """
+        return -position.turn
+
+    def next_turns(self, position: Position, moves: list[Move]) -> list[int]:
+        """Batch version of next_turn: returns the player to move after each
+        move in `moves`.
+
+        Default derives from next_turn (one call per move). Override this
+        method (instead of next_turn) to compute all turns in one pass for
+        efficiency (e.g. vectorised over the legal-move set). The returned
+        list must have the same length and order as `moves`.
+        """
+        return [self.next_turn(position, move) for move in moves]
+
     def __str__(self):
         return super().__str__()
 
