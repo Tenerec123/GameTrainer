@@ -52,6 +52,7 @@ class Game(ABC, Generic[Position, Move]):
             +1.0  win
             -1.0  loss
              0.0  draw
+            None  non-terminal
         """
         ...
 
