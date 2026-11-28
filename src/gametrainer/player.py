@@ -182,6 +182,14 @@ class Player:
         if temp is not None:
             temperature = temp
 
+        # Fast path: a single legal move needs no search / NN call.
+        try:
+            legal = self.game.get_legal_moves(position)
+        except Exception:
+            legal = None
+        if isinstance(legal, list) and len(legal) == 1:
+            return legal[0]
+
         if self.mcts is not None:
             from .mcts import Node
 

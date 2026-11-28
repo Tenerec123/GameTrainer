@@ -59,20 +59,23 @@ class MatchMaker:
             if result is not None:
                 self._print_move_traceback(pos_list+result)
                 raise RuntimeError("There was an error during the data generation")
-            
-            visit_counts = {move: c.visit_count for move, c in current_node.children.items()}
-            policy_targets.append(self.game.encode_policy_target(current_pos, visit_counts))
 
-            weights = np.array([c.visit_count ** (1 / temp) for c in current_node.children.values()])
-            if weights.sum() == 0:
-                weights = np.ones_like(weights)
-            weights /= weights.sum()          # normaliza por la suma REAL: robusto siempre
-            next_move_idx = np.random.choice(len(weights), p=weights)
+            if len(current_node.children) == 1:
+                next_move = list(current_node.children.keys())[0]
+                next_node = current_node.children[next_move]
+            else:
+                visit_counts = {move: c.visit_count for move, c in current_node.children.items()}
+                weights = np.array([c.visit_count ** (1 / temp) for c in current_node.children.values()])
+                if weights.sum() == 0:
+                    weights = np.ones_like(weights)
+                weights /= weights.sum()          # normaliza por la suma REAL: robusto siempre
+                next_move_idx = np.random.choice(len(weights), p=weights)
+                next_move = list(current_node.children.keys())[next_move_idx]
+                next_node = current_node.children[next_move]
+                policy_targets.append(self.game.encode_policy_target(current_pos, visit_counts))
+                pos_list.append(current_pos)
+                mcts_values.append(current_node.value())
 
-            next_move = list(current_node.children.keys())[next_move_idx]
-            next_node = current_node.children[next_move]
-            pos_list.append(current_pos)
-            mcts_values.append(current_node.value())
             current_pos = self.game.make_move(current_pos, next_move)
 
             del current_node.children[next_move]
