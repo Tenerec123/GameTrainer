@@ -28,3 +28,15 @@ priors, value = player.evaluate(pos)        # single forward pass
 ```
 
 `Player` exposes `evaluate`, `value`, `best_move` and `load_checkpoint`.
+
+## Implementing a game
+
+Subclass `Game` (rules only) or `EncodableGame` (rules + neural-network face).
+A move is free-form and must be hashable. `get_legal_moves` returns a `list[Move]`.
+
+By default every move alternates the turn (`next_turn` returns `-position.turn`).
+For games with forced continuations (a move that does not change the turn),
+override `next_turn(position, move)` (single) or `next_turns(position, moves)`
+(batch) to return the player to move afterwards. MCTS and self-play use this
+to keep `to_play` consistent. Positions with a single legal move are fast-pathed
+in MCTS/Player and are not stored as training examples in self-play.
